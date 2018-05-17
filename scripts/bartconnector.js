@@ -61,13 +61,13 @@ module.exports = class BartConnector {
 
     getDirectionByDeptDest(dept, dest) {
         let result = {};
-        let dept_R = this._BART_STATIONS_R[dept],
-            dest_R = this._BART_STATIONS_R[dest];
+        let dept_short = this._BART_STATIONS_R[dept],
+            dest_short = this._BART_STATIONS_R[dest];
         for(let color in this._BART_LINES) {
             result[color] = {
                 dept_n: dept, dest_n: dest, 
-                dept: findIndex(this._BART_LINES[color], dept_R),
-                dest: findIndex(this._BART_LINES[color], dest_R)
+                dept: findIndex(this._BART_LINES[color], dept_short),
+                dest: findIndex(this._BART_LINES[color], dest_short)
             };
             if( result[color].dept >= 0 && result[color].dest >= 0 ) {
                 if(result[color].dept > result[color].dest) {
@@ -96,6 +96,30 @@ module.exports = class BartConnector {
             return result;
         }
 
+    }
+
+    hasOnlyDirection(dept) {
+        let dept_short = this._BART_STATIONS_R[dept];
+        let result = {
+            status: false,
+            onlyDirection: null
+        };
+
+        switch(dept_short) {
+        case 'mlbr':
+        case 'warm':
+        case 'dubl':
+            result.status = true;
+            result.onlyDirection = 'north';
+            break;
+        case 'rich':
+        case 'antc':
+            result.status = true;
+            result.onlyDirection = 'south';
+            break;
+        }
+
+        return result;
     }
 
     printResult(ret, st0) {
