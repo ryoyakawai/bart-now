@@ -15,6 +15,8 @@ const bartStations = {
     'daly':	'Daly City',
     'dbrk':	'Downtown Berkeley',
     'dubl':	'Dublin Pleasanton',
+    '_dubl':	'Dublin',
+    '__dubl':	'Pleasanton',
     'deln':	'El Cerrito del Norte',
     'plza':	'El Cerrito Plaza',
     'embr':	'Embarcadero', // (SF)
@@ -29,21 +31,30 @@ const bartStations = {
     'mont':	'Montgomery Street', // (SF)
     'nbrk':	'North Berkeley',
     'ncon':	'North Concord Martinez',
+    '_ncon':	'North Concord',
+    '__ncon':	'Martinez',
     'oakl':	'Oakland International Airport',
+    '_oakl':	'OAK',
     'orin':	'Orinda',
     'pitt':	'Pittsburg Bay Point',
+    '_pitt':	'Pittsburg',
+    '__pitt':	'Bay Point',
     'pctr':	'Pittsburg Center',
     'phil':	'Pleasant Hill',
     'powl':	'Powell Street', // (SF)
+    '_powl':	'Powell', // (SF)
     'rich':	'Richmond',
     'rock':	'Rockridge', // (Oakland)
     'sbrn':	'San Bruno',
     'sfia':	'San Francisco International Airport',
+    '_sfia':	'SFO',
     'sanl':	'San Leandro',
     'shay':	'South Hayward',
     'ssan':	'South San Francisco',
     'ucty':	'Union City',
     'warm':	'Warm Springs South Fremont',
+    '_warm':	'Warm Springs',
+    '__warm':	'South Fremont',
     'wcrk':	'Walnut Creek',
     'wdub':	'West Dublin',
     'woak':	'West Oakland'

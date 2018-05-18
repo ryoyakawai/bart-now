@@ -7,9 +7,10 @@ module.exports = class BartConnector {
         this._BART_ST_INFO = require('./bartstations.js');
         this._BART_STATIONS = this._BART_ST_INFO.stations;
         this._BART_STATIONS_R = Object.keys(this._BART_STATIONS).reduce( (obj,key) => {
-            obj[ this.convFormat(this._BART_STATIONS[key]) ] = key;
+            obj[ this.convFormat(this._BART_STATIONS[key]) ] = key.replace(/^_*/g, '');
             return obj;
         }, {});
+        console.log('AAAAAAAAAA', this._BART_STATIONS_R);
         this._BART_LINES = this._BART_ST_INFO.lines;
         this._BART_API_KEY = 'MW9S-E7SL-26DU-VV8V';
         this._BART_API_URL = {
@@ -55,6 +56,7 @@ module.exports = class BartConnector {
             this.getBartEtdByStation(station).then( ret => {
                 let out = {
                     departure: station,
+                    direction: direction,
                     info: {}
                 };
                 for(let i in ret.station[0].etd) {
