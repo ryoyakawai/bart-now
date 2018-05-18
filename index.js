@@ -143,7 +143,15 @@ function setDepartureStationInSession(intent, session, callback) {
         if(resolution[i].status.code == 'ER_SUCCESS_MATCH') {
             let selectedStation = resolution[i].values[0].value.name;
             let onlyDirect = bc.hasOnlyDirection(selectedStation);
-            if( onlyDirect.status == false) {
+            if(onlyDirect.status !== false
+              && sessionAttrStation.departure === null){
+                sessionAttrStation.departure = selectedStation;
+                sessionAttrStation.direction = onlyDirect.onlyDirection;
+                speechOutput = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
+                repromptText = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction. So, let me start researching. `;
+                input_done = true;
+            } else 
+            /*if(onlyDirect.status == false)*/ {
                 if(sessionAttrStation.departure === null) {
                     sessionAttrStation.departure = selectedStation;
                     speechOutput  = `Set ${sessionAttrStation.departure} as departure station. Now, tell me a destination by station name or direction, such as south or north.`;
@@ -168,13 +176,7 @@ function setDepartureStationInSession(intent, session, callback) {
                     }
                     input_done = true;
                 }
-            } else {
-                sessionAttrStation.departure = selectedStation;
-                sessionAttrStation.direction = onlyDirect.onlyDirection;
-                speechOutput = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
-                repromptText = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction. So, let me start researching. `;
-                input_done = true;
-            }
+            } 
             match = true;
             break;
         }
