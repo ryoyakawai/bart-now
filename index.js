@@ -150,8 +150,7 @@ function setDepartureStationInSession(intent, session, callback) {
                 speechOutput = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
                 repromptText = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction. So, let me start researching. `;
                 input_done = true;
-            } else 
-            /*if(onlyDirect.status == false)*/ {
+            } else {
                 if(sessionAttrStation.departure === null) {
                     sessionAttrStation.departure = selectedStation;
                     speechOutput  = `Set ${sessionAttrStation.departure} as departure station. Now, tell me a destination by station name or direction, such as south or north.`;
