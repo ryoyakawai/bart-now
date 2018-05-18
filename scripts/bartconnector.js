@@ -7,7 +7,7 @@ module.exports = class BartConnector {
         this._BART_ST_INFO = require('./bartstations.js');
         this._BART_STATIONS = this._BART_ST_INFO.stations;
         this._BART_STATIONS_R = Object.keys(this._BART_STATIONS).reduce( (obj,key) => {
-            obj[ this._BART_STATIONS[key] ] = key;
+            obj[ this.convFormat(this._BART_STATIONS[key]) ] = key;
             return obj;
         }, {});
         this._BART_LINES = this._BART_ST_INFO.lines;
@@ -33,7 +33,7 @@ module.exports = class BartConnector {
     }
 
     getBartEtdByStation( station ) {
-        let abbr = this._BART_STATIONS_R[station];
+        let abbr = this._BART_STATIONS_R[this.convFormat(station)];
         let query = `cmd=etd&orig=${abbr}&key=${this._BART_API_KEY}&json=${this._JSON}`;
         let url = this._BART_API_URL['ETD'] + '?' + query;
         console.log(url);
@@ -41,7 +41,6 @@ module.exports = class BartConnector {
             this._request(url, (error, response, body) => {
                 if(error === null) {
                     this.convert2json(body).then( ret => {
-                        this.printResult(ret.root, station);
                         resolve( ret.root );
                     });
                 } else {
@@ -51,6 +50,32 @@ module.exports = class BartConnector {
         });
     }
 
+    getBartEtdByStationDirection(station, direction) {
+        return new Promise( (resolve, reject) => {
+            this.getBartEtdByStation(station).then( ret => {
+                let out = {
+                    departure: station,
+                    info: {}
+                };
+                for(let i in ret.station[0].etd) {
+                    for(let j in ret.station[0].etd[i].estimate) {
+                        if(this.convFormat(ret.station[0].etd[i].estimate[j]['direction'])
+                           == this.convFormat(direction)) {
+                            if(typeof out.info[ret.station[0].etd[i].destination] == 'undefined') out.info[ret.station[0].etd[i].destination]=[];
+                            for(let item in ret.station[0].etd[i].estimate[j]) {
+                                ret.station[0].etd[i].estimate[j][item] = ret.station[0].etd[i].estimate[j][item][0]; 
+                            }
+                            ret.station[0].etd[i].estimate[j]['departure'] = station;
+                            out.info[ret.station[0].etd[i].destination].push(ret.station[0].etd[i].estimate[j]);
+                            if(out.info[ret.station[0].etd[i].destination].length > 1) break;
+                        }
+                    }
+                }
+                resolve(out);
+            });
+        });
+    }
+    
     convert2json(xml) {
         return new Promise( (resolve, reject) => {
             this._parseString(xml, (err, result) => {
@@ -59,10 +84,14 @@ module.exports = class BartConnector {
         });
     }
 
+    convFormat(str) {
+        return new String(str).toLowerCase().replace(/ /g, '_');
+    }
+    
     getDirectionByDeptDest(dept, dest) {
         let result = {};
-        let dept_short = this._BART_STATIONS_R[dept],
-            dest_short = this._BART_STATIONS_R[dest];
+        let dept_short = this._BART_STATIONS_R[this.convFormat(dept)],
+            dest_short = this._BART_STATIONS_R[this.convFormat(dest)];
         for(let color in this._BART_LINES) {
             result[color] = {
                 dept_n: dept, dest_n: dest, 
@@ -82,8 +111,13 @@ module.exports = class BartConnector {
                 delete result[color];
             }
         }
-        return result;
+        let direction;
+        for(let color in result) {
+            direction = result[color].direction;
+        }
+        return direction;
 
+        
         function findIndex(array, target) {
             let i = 0, result = -1;
             while(i < array.length) {
@@ -99,7 +133,7 @@ module.exports = class BartConnector {
     }
 
     hasOnlyDirection(dept) {
-        let dept_short = this._BART_STATIONS_R[dept];
+        let dept_short = this._BART_STATIONS_R[this.convFormat(dept)];
         let result = {
             status: false,
             onlyDirection: null
