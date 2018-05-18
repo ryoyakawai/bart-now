@@ -10,7 +10,6 @@ module.exports = class BartConnector {
             obj[ this.convFormat(this._BART_STATIONS[key]) ] = key.replace(/^_*/g, '');
             return obj;
         }, {});
-        console.log('AAAAAAAAAA', this._BART_STATIONS_R);
         this._BART_LINES = this._BART_ST_INFO.lines;
         this._BART_API_KEY = 'MW9S-E7SL-26DU-VV8V';
         this._BART_API_URL = {
