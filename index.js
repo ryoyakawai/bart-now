@@ -64,7 +64,7 @@ function getWelcomeResponse(session, callback) {
 
 function handleSessionEndRequest(callback) {
     const cardTitle = 'Session Ended';
-    const speechOutput = 'OK. See you soon. Have a great day!';
+    const speechOutput = 'OK. See you next time.';
 
     let shouldEndSession = true;
 
@@ -100,7 +100,7 @@ function handleCompleteSearchRequest(intent, session, callback) {
     }
 
     if(match === false) {
-        speechOutput = 'Sorry. I could not get your answer. Would you like to do another search?';
+        speechOutput = 'Sorry. I could not get your answer. Would you like to do another search? Say Yes to continue, say No to quit.';
     }
     
     callback(session, buildSpeechletResponseSSML(cardTitle, speechOutput, null, shouldEndSession));
@@ -147,8 +147,8 @@ function setDepartureStationInSession(intent, session, callback) {
               && sessionAttrStation.departure === null){
                 sessionAttrStation.departure = selectedStation;
                 sessionAttrStation.direction = onlyDirect.onlyDirection;
-                speechOutput = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
-                repromptText = `Set ${sessionAttrStation.departure} as departure station. And ${sessionAttrStation.direction} is the only available direction. So, let me start researching. `;
+                speechOutput = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
+                repromptText = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction. So, let me start researching. `;
                 input_done = true;
             } else 
             /*if(onlyDirect.status == false)*/ {
@@ -218,15 +218,15 @@ function setDepartureStationInSession(intent, session, callback) {
     
     function createInformation(ret) {
         let speech = [];
-        speech.push(`Next train information at ${ret['departure']}.`);
+        speech.push(`Next ${ret['direction']} bound train information at ${ret['departure']} Bart station.`);
         for(let dest in ret.info ) {
             let item = 0;
             if(ret.info[dest][item]['minutes'] == 'Leaving') {
                 speech.push(`${dest} train is about leaving from platform ${ret.info[dest][item]['platform']}.`);
-                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next one is coming in ${ret.info[dest][item+1]['minutes']} minutes coming to platform ${ret.info[dest][item+1]['platform']}.`);
+                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next train is coming in ${ret.info[dest][item+1]['minutes']} minutes coming to platform ${ret.info[dest][item+1]['platform']}.`);
             } else {
                 speech.push(`${dest} train is coming to platform ${ret.info[dest][item]['platform']} in ${ret.info[dest][item]['minutes']} minutes.`);
-                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next one is coming to platform ${ret.info[dest][item+1]['platform']} in ${ret.info[dest][item+1]['minutes']} minutes.`);
+                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next train is coming to platform ${ret.info[dest][item+1]['platform']} in ${ret.info[dest][item+1]['minutes']} minutes.`);
             }
             speech.push("<break time='0.5s'/>");
         }
