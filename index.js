@@ -311,7 +311,8 @@ const setStationInformationInSession = (intent, session, callback) => {
         };
         let next_train_exists = false;
         speech.push(`Next ${ret['direction']} bound train information at ${ret['departure']} Bart station.`);
-        text.push(`${ret['direction']} bound :` + "\r\n");
+        let capBound = cap1stLetter(ret['direction']);
+        text.push(`${capBound} bound :` + "\r\n");
         for(let dest in ret.info ) {
             let item = 0;
             if(ret.info[dest][item]['minutes'] == 'Leaving') {
@@ -342,7 +343,12 @@ const setStationInformationInSession = (intent, session, callback) => {
         }
         console.log('[createResultSpeech] ', out);
         return out;
+
     };
+    const cap1stLetter = (word) => {
+        return word.substring(0, 1).toUpperCase() + word.substring(1);
+    };
+        
 
 };
 
