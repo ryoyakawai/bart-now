@@ -41,6 +41,7 @@ module.exports = class BartConnector {
             this._request(url, (error, response, body) => {
                 if(error === null) {
                     this.convert2json(body).then( ret => {
+                        console.log(ret);
                         resolve( ret.root );
                     });
                 } else {
@@ -72,6 +73,7 @@ module.exports = class BartConnector {
                         }
                     }
                 }
+                console.log('[getBartEtdByStationDirection(): result] ', out);
                 resolve(out);
             });
         });

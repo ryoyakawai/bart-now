@@ -14,7 +14,7 @@ bc.getBartEtdByStation('Powell Street').then( ret => {
 /* Tell me the name of destination station or which direction is your destination at? */
 //console.log(bc.getDirectionByDeptDest('Daly City', 'Daly City'));
 
-bc.getBartEtdByStationDirection('San Bruno', 'south').then( ret => {
+bc.getBartEtdByStationDirection('San Bruno', 'north').then( ret => {
     console.log(ret.info);
     let speech = [];
     speech.push(`This is the information of ${ret['departure']} station.`);
@@ -29,6 +29,7 @@ bc.getBartEtdByStationDirection('San Bruno', 'south').then( ret => {
         }
         speech.push("<break time='0.5s'/>");
     }
+    console.log('speech', speech);
     console.log(speech.join("\n"));
 }).catch( error =>{
     console.log(error);
