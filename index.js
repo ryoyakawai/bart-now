@@ -106,6 +106,26 @@ function handleCompleteSearchRequest(intent, session, callback) {
     callback(session, buildSpeechletResponseSSML(cardTitle, speechOutput, null, shouldEndSession));
 }
 
+function handleHelpRequest(intent, session, callback) {
+    let sessionAttributes = session.attributes;
+    const cardTitle = 'Help';
+    let speechOutput;
+
+    speechOutput = 'This skill is to provide next Bart train information of the route of your request. So, tell me departure station.';
+    if(session.attributes.station.departure !== null
+      && (bc.hasOnlyDirection(session.attributes.station.departure)).status === false) {
+       if(session.attributes.station.destination === null || session.attributes.station.direction === null) {
+           speechOutput = `Now, departre station is set ${session.attributes.station.departure}. So tell me a destination by station name or direction, such as south or north.`;
+       }
+    }
+    
+    const repromptText = speechOutput;
+    let shouldEndSession = false;
+
+    callback(sessionAttributes,
+             buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));    
+}
+
 function handleUndefinedRequest(callback) {
     const sessionAttributes = {};
     const cardTitle = 'undefined';
@@ -143,8 +163,13 @@ function setDepartureStationInSession(intent, session, callback) {
         if(resolution[i].status.code == 'ER_SUCCESS_MATCH') {
             let selectedStation = resolution[i].values[0].value.name;
             let onlyDirect = bc.hasOnlyDirection(selectedStation);
+
+            if(sessionAttrStation.departure === null
+               && selectedStation.toLowerCase().match(/south|north/) !== null) {
+                speechOutput = `${selectedStation} is not able to set as departure station. Would you please tell me departure station?`;
+            } else           
             if(onlyDirect.status !== false
-              && sessionAttrStation.departure === null){
+               && sessionAttrStation.departure === null) {
                 sessionAttrStation.departure = selectedStation;
                 sessionAttrStation.direction = onlyDirect.onlyDirection;
                 speechOutput = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
@@ -188,12 +213,14 @@ function setDepartureStationInSession(intent, session, callback) {
             promptPoint = 'departure';
         }
         // [TODO] to be able to correct ambigious station name here
-        if(same_station == false) {
-            speechOutput = `Sorry, ${usersInput} is not valid input. Would you please try again?`;
-            repromptText = `Sorry, ${usersInput} is not valid input. Would you please try again?`;
-        } else {
-            speechOutput = `${sessionAttrStation.departure} already set as departure station. Please choose different station. Which station would you like to set as destination? Both station name and direction is OK.`;
-            repromptText = `${sessionAttrStation.departure} already set as departure station. Please choose different station.`;
+        if(speechOutput === null) {
+            if(same_station == false) {
+                speechOutput = `Sorry, ${usersInput} is not valid input. Would you please try again?`;
+                repromptText = `Sorry, ${usersInput} is not valid input. Would you please try again?`;
+            } else {
+                speechOutput = `${sessionAttrStation.departure} already set as departure station. Please choose different station. Which station would you like to set as destination? Both station name and direction is OK.`;
+                repromptText = `${sessionAttrStation.departure} already set as departure station. Please choose different station.`;
+            }
         }
     }
     
@@ -204,9 +231,13 @@ function setDepartureStationInSession(intent, session, callback) {
         bc.getBartEtdByStationDirection(sessionAttrStation.departure, sessionAttrStation.direction).then( ret => {
             speechOutput += createInformation(ret);
             speechOutput +=  `<break time='0.5s' /> Would you like to do another search?`;
-            //speechOutput +=  `<break time='0.5s' /> Thank you for using Catch Bart. Have a great day!`;
-            //shouldEndSession = true;
 
+            sessionAttributes.station = {
+                departure: null,
+                destination: null,
+                direction: null
+            };
+            
             callback(sessionAttributes,
                      buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));
         });
@@ -229,7 +260,7 @@ function setDepartureStationInSession(intent, session, callback) {
             }
             speech.push("<break time='0.5s'/>");
         }
-        return "<break time='1.5s'/> " + speech.join(' ');
+        return "<break time='1.0s'/> " + speech.join(' ');
     }
 
 }
@@ -274,6 +305,10 @@ function onIntent(intentRequest, session, callback) {
     case 'AMAZON.CancelIntent':
         console.log('Intent: ' + intentName );
         handleSessionEndRequest(callback);
+        break;
+    case 'AMAZON.HelpIntent':
+        console.log('Intent: ' + intentName );
+        handleHelpRequest(intent, session, callback);
         break;
     default:
         handleUndefinedRequest();
