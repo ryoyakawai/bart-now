@@ -4,7 +4,7 @@ const SKILLID = 'amzn1.ask.skill.02aafc22-ff0a-47f6-b7e6-acf978bd0f42';
 const BartConnector = require('./scripts/bartconnector.js');
 const bc = new BartConnector();
 
-const buildSpeechletResponseSSML = (title, output_ssml, repromptText_ssml, shouldEndSession) => {
+const buildSpeechletResponseSSML = (cardContent, output_ssml, repromptText_ssml, shouldEndSession) => {
     let output_plain = output_ssml.replace(/<[^>]*>/g, '');
     let out = {
         outputSpeech: {
@@ -15,8 +15,8 @@ const buildSpeechletResponseSSML = (title, output_ssml, repromptText_ssml, shoul
         },
         card: {
             type: 'Simple',
-            title: `SessionSpeechlet - ${title}`,
-            content: `SessionSpeechlet - ${output_plain}`
+            title: cardContent.title + ' - Catch Bart',
+            content: cardContent.content
         },
         reprompt: {
             outputSpeech: {
@@ -53,28 +53,36 @@ const getWelcomeResponse = (session, callback) => {
         }
     };
 
-    const cardTitle = 'Welcome';
     const speechOutput = "Hi. Wellcome to Catch Bart. Tell me departure station.";
     const repromptText = speechOutput;
+    const cardContent = {
+        title: 'Welcome',
+        content: 'Tell me Departure Station.'
+    };
     let shouldEndSession = false;
     
     callback(sessionAttributes,
-             buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));
+             buildSpeechletResponseSSML(cardContent, speechOutput, repromptText, shouldEndSession));
 };
 
 const handleSessionEndRequest = (callback) => {
-    const cardTitle = 'Session Ended';
     const speechOutput = 'OK. See you next time.';
-
+    const cardContent = {
+        title: 'Bye',
+        content: 'Thank you for using. See you next time.'
+    };
     let shouldEndSession = true;
 
-    callback({}, buildSpeechletResponseSSML(cardTitle, speechOutput, null, shouldEndSession));
+    callback({}, buildSpeechletResponseSSML(cardContent, speechOutput, null, shouldEndSession));
 };
 
 const handleCompleteSearchRequest = (intent, session, callback) => {
-    const cardTitle = 'Session Ended';
     const yesNoResSlot = intent.slots.YES_NO_RES; 
     let speechOutput;
+    const cardContent = {
+        title: '',
+        content: ''
+    };
     let shouldEndSession = false;
     
     let resolution = yesNoResSlot.resolutions.resolutionsPerAuthority;
@@ -86,11 +94,15 @@ const handleCompleteSearchRequest = (intent, session, callback) => {
             case 'yes':
             case 'yup':
             case 'yeah':
-                speechOutput = "Ok, let's start again. Tell me departure station.";
+                speechOutput = "OK, let's start again. Tell me departure station.";
+                cardContent.title = 'Search schedule';
+                cardContent.content = 'Tell me Departure Station.';
                 break;
             case 'no':
             case 'nope':
                 speechOutput = 'Thank you very much for using Catch Bart. See you soon!';
+                cardContent.title = 'Thank you.';
+                cardContent.content = 'See you soon!';
                 shouldEndSession = true;
                 break;
             }
@@ -103,19 +115,26 @@ const handleCompleteSearchRequest = (intent, session, callback) => {
         speechOutput = 'Sorry. I could not get your answer. Would you like to do another search? Say Yes to continue, say No to quit.';
     }
     
-    callback(session, buildSpeechletResponseSSML(cardTitle, speechOutput, null, shouldEndSession));
+    callback(session, buildSpeechletResponseSSML(cardContent, speechOutput, null, shouldEndSession));
 };
 
 const handleHelpRequest = (intent, session, callback) => {
     let sessionAttributes = session.attributes;
-    const cardTitle = 'Help';
     let speechOutput;
+    let cardContent = {
+        title: '',
+        content: ''
+    };
 
-    speechOutput = 'This skill is to provide next Bart train information of the route of your request. So, tell me departure station.';
+    speechOutput = 'This skill is to provide next Bart train schedule of what you request. So, tell me departure station.';
+    cardContent.title = 'Help';
+    cardContent.content = 'Provide you Bart schedule. Tell me Departure Station.';
     if(session.attributes.station.departure !== null
       && (bc.hasOnlyDirection(session.attributes.station.departure)).status === false) {
        if(session.attributes.station.destination === null || session.attributes.station.direction === null) {
            speechOutput = `Now, departre station is set ${session.attributes.station.departure}. So tell me a destination by station name or direction, such as south or north.`;
+           cardContent.title = 'Help';
+           cardContent.content = `Provide you Bart schedule departing from ${session.attributes.station.departure}. Where do you want to go?`;
        }
     }
     
@@ -123,18 +142,32 @@ const handleHelpRequest = (intent, session, callback) => {
     let shouldEndSession = false;
 
     callback(sessionAttributes,
-             buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));    
+             buildSpeechletResponseSSML(cardContent, speechOutput, repromptText, shouldEndSession));    
 };
 
-const handleUndefinedRequest = (callback) => {
-    const sessionAttributes = {};
-    const cardTitle = 'undefined';
-    const speechOutput = "I couldn't understand what you have just said. <break time ='1s' /> Tell me the date of the schedule you would like to know again, please.";
+const handleUndefinedRequest = (intent, session, callback) => {
+    let sessionAttrStation = session.attributes.station;
+    const speechOutput = "Sorry, I couldn't understand what you have just said.";
+    let cardContent = {
+        title: 'Unrecognized',
+        content: ''
+    };
     const repromptText = speechOutput;
     let shouldEndSession = false;
 
-    callback(sessionAttributes,
-             buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));    
+    let out = ' Tell me departure station.';
+    cardContent.content = "Tell me departure station.";
+    if(typeof sessionAttrStation !== 'undefined') {
+        if(sessionAttrStation.destination === null
+           && sessionAttrStation.direction === null) {
+            out = ' Tell me destination station.';
+            cardContent.content = "Tell me destinamtion station.";
+        }
+    }
+    speechOutput += out;
+    
+    callback(sessionAttrStation,
+             buildSpeechletResponseSSML(cardContent, speechOutput, repromptText, shouldEndSession));    
 };
 
 /**
@@ -149,11 +182,14 @@ const setStationInformationInSession = (intent, session, callback) => {
         };
     }
     
-    const cardTitle = intent.name;
     const bartStationSlot = intent.slots.BART_STATION;
     let shouldEndSession = false;
     let sessionAttrStation = session.attributes.station;
     let speechOutput = null;
+    let cardContent = {
+        title: '',
+        content: ''
+    };
     let repromptText = '';
 
     // matching the intents and slot
@@ -168,22 +204,30 @@ const setStationInformationInSession = (intent, session, callback) => {
                && selectedStation.toLowerCase().match(/south|north/) !== null) {
                 speechOutput = `${selectedStation} is not able to set as departure station. Would you please tell me departure station?`;
                 repromptText = speechOutput; 
+                cardContent.title = 'Invalid Departure station';
+                cardContent.content = `Tell me departure station. (invalid:${selectedStation})`;
             } else
             if(onlyDirect.status !== false
                && sessionAttrStation.departure === null) {
                 sessionAttrStation.departure = selectedStation;
                 sessionAttrStation.direction = onlyDirect.onlyDirection;
                 speechOutput = `Set ${sessionAttrStation.departure} as departure station. ${sessionAttrStation.direction} is the only available direction from ${sessionAttrStation.departure} station. `;
+                cardContent.title = `Next Train Schedule : ${sessionAttrStation.departure}`;
+                cardContent.content = ''; //`${sessionAttrStation.direction} bound.`;
                 input_done = true;
             } else {
                 if(sessionAttrStation.departure === null) {
                     sessionAttrStation.departure = selectedStation;
                     speechOutput = `Set ${sessionAttrStation.departure} as departure station. Now, tell me destination by station name or direction, such as south or north.`;
+                    cardContent.title = 'Tell me destination.';
+                    cardContent.content = `Tell me destination station. \n(Departure: ${sessionAttrStation.departure})`;
                     repromptText = speechOutput;
                 } else {
                     if(selectedStation.toLowerCase().match(/south|north/) !== null) {
                         sessionAttrStation.direction = selectedStation;
                         speechOutput  = `I got you. Going ${sessionAttrStation.direction}, departing from ${sessionAttrStation.departure}. `;
+                        cardContent.title = `Next Train Schedule : ${sessionAttrStation.departure}`;
+                        cardContent.content = ''; //`${sessionAttrStation.direction} bound.`;
                     } else {
                         sessionAttrStation.destination = bartStationSlot.value;
                         let ret_direction = bc.getDirectionByDeptDest(sessionAttrStation.departure, sessionAttrStation.destination);
@@ -194,6 +238,8 @@ const setStationInformationInSession = (intent, session, callback) => {
                             sessionAttrStation.direction = bc.getDirectionByDeptDest(sessionAttrStation.departure, sessionAttrStation.destination);
                         }                        
                         speechOutput  = `I got you. Departing from ${sessionAttrStation.departure} to ${sessionAttrStation.destination}.`;
+                        cardContent.title = `Next Train Schedule : ${sessionAttrStation.departure}`;
+                        cardContent.content = '';
                     }
                     input_done = true;
                 }
@@ -215,13 +261,19 @@ const setStationInformationInSession = (intent, session, callback) => {
                 speechOutput = `Sorry, ${usersInput} is invalid for station name or for direction.`;
                 if(sessionAttrStation.departure === null) {
                     speechOutput += ` Would you tell me departure station?`;
+                    cardContent.title = 'Tell me Departure';
+                    cardContent.content = `Tell me departure station.`;
                 } else {
                     speechOutput += ` Would you tell me destination station?`;
+                    cardContent.title = 'Tell me destination.';
+                    cardContent.content = `Tell me destination station. (Departure: ${sessionAttrStation.departure})`;
                 }
                 repromptText = speechOutput;
             } else {
-                speechOutput = `${sessionAttrStation.departure} already set as departure station. Please choose different station. Which station would you like to set as destination? Both station name and direction is OK.`;
+                speechOutput = `${sessionAttrStation.departure} is already set as departure station. Please choose different station. Which station would you like to set as destination? Both station name and direction is OK.`;
                 repromptText = speechOutput;
+                cardContent.title = 'Tell me destination.';
+                cardContent.content = `Tell me destination station. ${sessionAttrStation.departure} is set to departure station.`;
             }
         }
     }
@@ -231,8 +283,10 @@ const setStationInformationInSession = (intent, session, callback) => {
 
     if(input_done == true && match == true ) {
         bc.getBartEtdByStationDirection(sessionAttrStation.departure, sessionAttrStation.direction).then( ret => {
-            speechOutput += createResultSpeech(ret);
+            let trainSchedule = createResultSpeech(ret);
+            speechOutput += trainSchedule.speech;
             speechOutput +=  `<break time='0.5s' /> Would you like to do another search?`;
+            cardContent.content = trainSchedule.text + "\n" + ' Get another schedule?';
 
             sessionAttributes.station = {
                 departure: null,
@@ -241,36 +295,52 @@ const setStationInformationInSession = (intent, session, callback) => {
             };
             
             callback(sessionAttributes,
-                     buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));
+                     buildSpeechletResponseSSML(cardContent, speechOutput, repromptText, shouldEndSession));
         });
     } else {
         callback(sessionAttributes,
-                 buildSpeechletResponseSSML(cardTitle, speechOutput, repromptText, shouldEndSession));
+                 buildSpeechletResponseSSML(cardContent, speechOutput, repromptText, shouldEndSession));
     }
 
     const createResultSpeech = (ret) => {
         console.log('[createResultSpeech] ', ret);
-        let speech = [], out;
+        let speech = [], text = [];
+        let out = {
+            speech: null,
+            text: null
+        };
         let next_train_exists = false;
         speech.push(`Next ${ret['direction']} bound train information at ${ret['departure']} Bart station.`);
+        text.push(`${ret['direction']} bound :` + "\r\n");
         for(let dest in ret.info ) {
             let item = 0;
             if(ret.info[dest][item]['minutes'] == 'Leaving') {
                 speech.push(`${dest} train is about leaving from platform ${ret.info[dest][item]['platform']}.`);
-                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next train is coming in ${ret.info[dest][item+1]['minutes']} minutes coming to platform ${ret.info[dest][item+1]['platform']}.`);
+                text.push(`[${dest}] ` + "\r\n" + `- About Leaving <P: ${ret.info[dest][item]['platform']}>` + "\r\n");
+                if(typeof ret.info[dest][item+1] != 'undefined') {
+                    speech.push(`And next train is coming in ${ret.info[dest][item+1]['minutes']} minutes coming to platform ${ret.info[dest][item+1]['platform']}.`);
+                    text.push(` - ${ret.info[dest][item+1]['minutes']} mins <P: ${ret.info[dest][item+1]['platform']}>`);
+                }
                 next_train_exists = true;
             } else {
                 speech.push(`${dest} train is coming to platform ${ret.info[dest][item]['platform']} in ${ret.info[dest][item]['minutes']} minutes.`);
-                if(typeof ret.info[dest][item+1] != 'undefined') speech.push(`And next train is coming to platform ${ret.info[dest][item+1]['platform']} in ${ret.info[dest][item+1]['minutes']} minutes.`);
+                text.push(`[${dest}] ` + "\r\n" + `- ${ret.info[dest][item]['minutes']} mins <P: ${ret.info[dest][item]['platform']}>` + "\r\n");
+                if(typeof ret.info[dest][item+1] != 'undefined') {
+                    speech.push(`And next train is coming to platform ${ret.info[dest][item+1]['platform']} in ${ret.info[dest][item+1]['minutes']} minutes.`);
+                    text.push(`- ${ret.info[dest][item+1]['minutes']} mins <P: ${ret.info[dest][item+1]['platform']}>` + "\r\n");
+                }
                 next_train_exists = true;
             }
             speech.push("<break time='0.5s'/>");
         }
         if(next_train_exists === true) {
-            out = "<break time='1.0s'/> " + speech.join(' ');
+            out.speech = "<break time='1.0s'/> " + speech.join(' ');
+            out.text = text.join(' ');
         } else {
-            out = "<break time='1.0s'/> " + ` I am sorry to tell you this. Unfortunately, there are not ${ret['direction']} bound train at ${ret['departure']} Bart station for today.`;
+            out.speech = "<break time='1.0s'/> " + ` I am sorry to tell you this. Unfortunately, there are not ${ret['direction']} bound train at ${ret['departure']} Bart station for today.`;
+            out.text = 'Unfortunately, no train for today.';
         }
+        console.log('[createResultSpeech] ', out);
         return out;
     };
 
@@ -323,7 +393,7 @@ const onIntent = (intentRequest, session, callback) => {
         handleHelpRequest(intent, session, callback);
         break;
     default:
-        handleUndefinedRequest();
+        handleUndefinedRequest(intent, session, callback);
         break;
     }
 };
